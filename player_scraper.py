@@ -80,8 +80,24 @@ def parse_html_table(table):
 # ctx = context
 def scrape(country, year, ctx):
   url = base_url + country_codes[country] + '&season=' + year + '0&category=CONTROL'
-  soup = soupify(url, ctx)
 
+  soup = soupify(url, ctx)
   table = soup.find_all('table')[0]
-  print parse_html_table(table)
+  dataframe = parse_html_table(table)
+
+  # will continue going until it can't see the next link anymore
+  keep_going = True
+  while keep_going:
+    soup = soupify(url, ctx)
+    table = soup.find_all('table')[0]
+    dataframe = dataframe.append(parse_html_table(table))
+    paginator = soup.find_all("div", class_="wisbb_paginator")[0]
+    next_button = paginator.find_all('a')[-1]
+    if "Next" not in next_button.get_text():
+      keep_going = False
+    else:
+      url = 'http://www.foxsports.com/' + next_button['href']
+
+  print dataframe
+
   
