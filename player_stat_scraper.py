@@ -1,12 +1,10 @@
-# Soccer player stat scraper
+# Soccer player stat scraper runner
 # Arguments -- 
 # [1]: league ("England", "France", "Spain", "Germany", "Italy")
 # [2]: year ("2013", "2014", "2015", "2016")
 
 import sys
 from sys import version_info
-from bs4 import BeautifulSoup
-from urllib2 import urlopen
 import ssl
 
 import england_player_scraper
@@ -19,16 +17,17 @@ def verify_false():
   ctx.verify_mode = ssl.CERT_NONE
   return ctx
 
-# open and soupify
-def soupify(url, ctx):
-  html = urlopen(url, context=ctx).read()
-  soup = BeautifulSoup(html, "lxml")
-  return soup
-
 if __name__ == "__main__":
-  print str(sys.argv)
+  ctx = verify_false()
 
-  # if sys.argv[1]
-  #   if sys.argv[1] === "England":
-  #     england_player_scraper.scrape(sys.argv[2])
-  #   elif sys.argv[1] 
+  if sys.argv[1] != 'all':
+    if sys.argv[1] == 'England':
+      england_player_scraper.scrape(sys.argv[2], ctx)
+    else:
+      player_scraper.scrape(sys.argv[1], sys.argv[2], ctx)
+  else:
+    england_player_scraper(sys.argv[2], ctx)
+    player_scraper('Spain', sys.argv[2], ctx)
+    player_scraper('France', sys.argv[2], ctx)
+    player_scraper('Italy', sys.argv[2], ctx)
+    player_scraper('Germany', sys.argv[2], ctx)
