@@ -79,7 +79,10 @@ def parse_html_table(table):
 # year = "2013", "2014", "2015", "2016"
 # ctx = context
 def scrape(country, year, ctx):
+  print 'Scraping ' + year + ' data for ' + country + '...'
+
   url = base_url + country_codes[country] + '&season=' + year + '0&category=CONTROL'
+  filename = './data/' + country + '_' + year + '.csv'
 
   soup = soupify(url, ctx)
   table = soup.find_all('table')[0]
@@ -98,6 +101,9 @@ def scrape(country, year, ctx):
     else:
       url = 'http://www.foxsports.com/' + next_button['href']
 
-  print dataframe
+    print '+++++++++++++'
+
+  dataframe.to_csv(filename, encoding='utf-8', index=False)
+  print 'CSV of data created!'
 
   
