@@ -26,8 +26,8 @@ if __name__ == "__main__":
     else:
       player_scraper.scrape(sys.argv[1], sys.argv[2], ctx)
   else:
-    england_player_scraper(sys.argv[2], ctx)
-    player_scraper('Spain', sys.argv[2], ctx)
-    player_scraper('France', sys.argv[2], ctx)
-    player_scraper('Italy', sys.argv[2], ctx)
-    player_scraper('Germany', sys.argv[2], ctx)
+    england_player_scraper.scrape(sys.argv[2], ctx)
+    player_scraper.scrape('Spain', sys.argv[2], ctx)
+    player_scraper.scrape('France', sys.argv[2], ctx)
+    player_scraper.scrape('Italy', sys.argv[2], ctx)
+    player_scraper.scrape('Germany', sys.argv[2], ctx)

@@ -1,4 +1,4 @@
-# player scraper method
+# player scraper methods
 # scrapes player stats from Fox Sports website
 
 import csv
@@ -14,12 +14,6 @@ def soupify(url, ctx):
   html = urlopen(url, context=ctx).read()
   soup = BeautifulSoup(html, "lxml")
   return soup
-
-# creates a csv file with name of your choice and returns a csv writer
-def create_csv(filename):
-    myfile = open(filename, 'wb')
-    wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-    return wr
 
 # parse html table to pandas dataframe
 def parse_html_table(table):
@@ -82,7 +76,37 @@ def scrape_by_pos(country, year, ctx, position):
     url = base_url + country_codes[country] + '&season=' + year + '0&category=CONTROL&pos=' + position + '&team=0&isOpp=0&sort=3&sortOrder=0'
   else:
     url = base_url + country_codes[country] + '&season=' + year + '0&category=GOALKEEPING'
-  filename = './data/' + position + '_' + country + '_' + year + '.csv'
+  filename = './data/' + position + '_' + country + '_' + year + '_Control.csv'
+
+  soup = soupify(url, ctx)
+  table = soup.find_all('table')[0]
+  dataframe = parse_html_table(table)
+
+  # will continue going until it can't see the next link anymore
+  keep_going = True
+  while keep_going:
+    soup = soupify(url, ctx)
+    table = soup.find_all('table')[0]
+    dataframe = dataframe.append(parse_html_table(table))
+    if position != 'Goalkeeper':
+      paginator = soup.find_all("div", class_="wisbb_paginator")[0]
+      next_button = paginator.find_all('a')[-1]
+      if "Next" not in next_button.get_text():
+        keep_going = False
+      else:
+        url = 'http://www.foxsports.com/' + next_button['href']
+    else:
+      keep_going = False
+
+    print '+++++++++++++'
+
+  dataframe.to_csv(filename, encoding='utf-8', index=False)
+
+  if position != 'Goalkeeper':
+    url = base_url + country_codes[country] + '&season=' + year + '0&category=DISCIPLINE&pos=' + position + '&team=0&isOpp=0&sort=3&sortOrder=0'
+  else:
+    url = base_url + country_codes[country] + '&season=' + year + '0&category=GOALKEEPING'
+  filename = './data/' + position + '_' + country + '_' + year + '_Discipline.csv'
 
   soup = soupify(url, ctx)
   table = soup.find_all('table')[0]
