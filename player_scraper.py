@@ -74,15 +74,15 @@ def parse_html_table(table):
 
   return df
 
-# get data and output csv
-# country = "Spain", "France", "Italy", "Germany"
-# year = "2013", "2014", "2015", "2016"
-# ctx = context
-def scrape(country, year, ctx):
-  print 'Scraping ' + year + ' data for ' + country + '...'
-
-  url = base_url + country_codes[country] + '&season=' + year + '0&category=CONTROL'
-  filename = './data/' + country + '_' + year + '.csv'
+# scrape players by position
+# positions are "Defender", "Midfielder", "Forward", "Goalkeeper"
+def scrape_by_pos(country, year, ctx, position):
+  print 'Scraping ' + position + 's'
+  if position != 'Goalkeeper':
+    url = base_url + country_codes[country] + '&season=' + year + '0&category=CONTROL&pos=' + position + '&team=0&isOpp=0&sort=3&sortOrder=0'
+  else:
+    url = base_url + country_codes[country] + '&season=' + year + '0&category=GOALKEEPING'
+  filename = './data/' + position + '_' + country + '_' + year + '.csv'
 
   soup = soupify(url, ctx)
   table = soup.find_all('table')[0]
@@ -94,16 +94,32 @@ def scrape(country, year, ctx):
     soup = soupify(url, ctx)
     table = soup.find_all('table')[0]
     dataframe = dataframe.append(parse_html_table(table))
-    paginator = soup.find_all("div", class_="wisbb_paginator")[0]
-    next_button = paginator.find_all('a')[-1]
-    if "Next" not in next_button.get_text():
-      keep_going = False
+    if position != 'Goalkeeper':
+      paginator = soup.find_all("div", class_="wisbb_paginator")[0]
+      next_button = paginator.find_all('a')[-1]
+      if "Next" not in next_button.get_text():
+        keep_going = False
+      else:
+        url = 'http://www.foxsports.com/' + next_button['href']
     else:
-      url = 'http://www.foxsports.com/' + next_button['href']
+      keep_going = False
 
     print '+++++++++++++'
 
   dataframe.to_csv(filename, encoding='utf-8', index=False)
-  print 'CSV of data created!'
+
+
+
+# get data and output csv
+# country = "Spain", "France", "Italy", "Germany"
+# year = "2013", "2014", "2015", "2016"
+# ctx = context
+def scrape(country, year, ctx):
+  print 'Scraping ' + year + ' data for ' + country + '...'
+  scrape_by_pos(country, year, ctx, "Defender")
+  scrape_by_pos(country, year, ctx, "Midfielder")
+  scrape_by_pos(country, year, ctx, "Forward")
+  scrape_by_pos(country, year, ctx, "Goalkeeper")
+  print 'CSVs of data created!'
 
   
