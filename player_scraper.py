@@ -115,9 +115,6 @@ def scrape_by_pos(country, year, ctx, position):
   # will continue going until it can't see the next link anymore
   keep_going = True
   while keep_going:
-    soup = soupify(url, ctx)
-    table = soup.find_all('table')[0]
-    dataframe = dataframe.append(parse_html_table(table))
     if position != 'Goalkeeper':
       paginator = soup.find_all("div", class_="wisbb_paginator")[0]
       next_button = paginator.find_all('a')[-1]
@@ -125,6 +122,9 @@ def scrape_by_pos(country, year, ctx, position):
         keep_going = False
       else:
         url = 'http://www.foxsports.com/' + next_button['href']
+        soup = soupify(url, ctx)
+        table = soup.find_all('table')[0]
+        dataframe = dataframe.append(parse_html_table(table))
     else:
       keep_going = False
 
