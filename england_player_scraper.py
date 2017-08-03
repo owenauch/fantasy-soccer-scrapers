@@ -72,20 +72,21 @@ def parse_html_table(table):
 def scrape_by_pos(year, ctx, position):
   print 'Scraping ' + position + 's'
 
-  # standard stats
+  # get data into two dataframes
+  # CONTROL
   url = base_url + '&season=' + year + '0&category=STANDARD&pos=' + position + '&team=0&isOpp=0&sort=3&sortOrder=0'
-  filename = './data/' + position + '_England_' + year + '_Standard.csv'
+  filename = './data/' + position + '_England_' + year + '.csv'
 
   soup = soupify(url, ctx)
   table = soup.find_all('table')[0]
-  standard_dataframe = parse_html_table(table)
+  s_dataframe = parse_html_table(table)
 
   # will continue going until it can't see the next link anymore
   keep_going = True
   while keep_going:
     soup = soupify(url, ctx)
     table = soup.find_all('table')[0]
-    standard_dataframe = standard_dataframe.append(parse_html_table(table))
+    s_dataframe = s_dataframe.append(parse_html_table(table))
     paginator = soup.find_all("div", class_="wisbb_paginator")[0]
     next_button = paginator.find_all('a')[-1]
     if "Next" not in next_button.get_text():
@@ -95,32 +96,37 @@ def scrape_by_pos(year, ctx, position):
 
     print '+++++++++++++'
 
-  standard_dataframe.to_csv(filename, encoding='utf-8', index=False)
+  s_dataframe = s_dataframe.rename(columns = {'STANDARD':'Name'})
+  s_dataframe = s_dataframe.drop_duplicates()
 
-  # discipline stats
+  # DISCIPLINE
   url = base_url + '&season=' + year + '0&category=DISCIPLINE&pos=' + position + '&team=0&isOpp=0&sort=3&sortOrder=0'
-  filename = './data/' + position + '_England_' + year + '_Discipline.csv'
 
   soup = soupify(url, ctx)
   table = soup.find_all('table')[0]
-  discipline_dataframe = parse_html_table(table)
+  d_dataframe = parse_html_table(table)
 
   # will continue going until it can't see the next link anymore
   keep_going = True
   while keep_going:
-    soup = soupify(url, ctx)
-    table = soup.find_all('table')[0]
-    discipline_dataframe = discipline_dataframe.append(parse_html_table(table))
     paginator = soup.find_all("div", class_="wisbb_paginator")[0]
     next_button = paginator.find_all('a')[-1]
     if "Next" not in next_button.get_text():
       keep_going = False
     else:
       url = 'http://www.foxsports.com/' + next_button['href']
+      soup = soupify(url, ctx)
+      table = soup.find_all('table')[0]
+      d_dataframe = d_dataframe.append(parse_html_table(table))
 
-    print '+++++++++++++' 
+    print '+++++++++++++'
 
-  discipline_dataframe.to_csv(filename, encoding='utf-8', index=False)
+  d_dataframe = d_dataframe.rename(columns = {'DISCIPLINE':'Name'})
+
+  # combine
+  dataframe = pd.merge(d_dataframe, s_dataframe, on='Name', how='outer')
+
+  dataframe.to_csv(filename, encoding='utf-8', index=False)
 
 def scrape_goalie(year, ctx):
   print 'Scraping goalies'

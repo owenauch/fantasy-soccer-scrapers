@@ -52,7 +52,7 @@ def parse_html_table(table):
       columns = row.find_all('td')
       for column in columns:
           if column_marker == 0:
-            df.iat[row_marker,column_marker] = column.find_all('span')[1].get_text()
+            df.iat[row_marker,column_marker] = column.find_all("a", { "class" : "wisbb_fullPlayer" })[0].find_all('span')[0].get_text()
           else:
             df.iat[row_marker,column_marker] = column.get_text()
           column_marker += 1
@@ -68,71 +68,83 @@ def parse_html_table(table):
 
   return df
 
-# scrape players by position
-# positions are "Defender", "Midfielder", "Forward", "Goalkeeper"
-def scrape_by_pos(country, year, ctx, position):
-  print 'Scraping ' + position + 's'
-  if position != 'Goalkeeper':
-    url = base_url + country_codes[country] + '&season=' + year + '0&category=CONTROL&pos=' + position + '&team=0&isOpp=0&sort=3&sortOrder=0'
-  else:
-    url = base_url + country_codes[country] + '&season=' + year + '0&category=GOALKEEPING'
-  filename = './data/' + position + '_' + country + '_' + year + '_Control.csv'
+# scrape goalkeepers
+def scrape_goalie(country, year, ctx):
+  print 'Scraping goalies'
+  url = base_url + country_codes[country] + '&season=' + year + '0&category=GOALKEEPING'
+  filename = './data/Goalkeeper' + '_' + country + '_' + year + '.csv'
 
   soup = soupify(url, ctx)
   table = soup.find_all('table')[0]
   dataframe = parse_html_table(table)
+
+  soup = soupify(url, ctx)
+  table = soup.find_all('table')[0]
+  dataframe = dataframe.append(parse_html_table(table))
+  print '+++++++++++++'
+
+  dataframe.to_csv(filename, encoding='utf-8', index=False)
+
+# scrape players by position
+# positions are "Defender", "Midfielder", "Forward"
+def scrape_by_pos(country, year, ctx, position):
+  print 'Scraping ' + position + 's'
+
+  # get data into two dataframes
+  # CONTROL
+  url = base_url + country_codes[country] + '&season=' + year + '0&category=CONTROL&pos=' + position + '&team=0&isOpp=0&sort=3&sortOrder=0'
+  filename = './data/' + position + '_' + country + '_' + year + '.csv'
+
+  soup = soupify(url, ctx)
+  table = soup.find_all('table')[0]
+  c_dataframe = parse_html_table(table)
 
   # will continue going until it can't see the next link anymore
   keep_going = True
   while keep_going:
     soup = soupify(url, ctx)
     table = soup.find_all('table')[0]
-    dataframe = dataframe.append(parse_html_table(table))
-    if position != 'Goalkeeper':
-      paginator = soup.find_all("div", class_="wisbb_paginator")[0]
-      next_button = paginator.find_all('a')[-1]
-      if "Next" not in next_button.get_text():
-        keep_going = False
-      else:
-        url = 'http://www.foxsports.com/' + next_button['href']
-    else:
+    c_dataframe = c_dataframe.append(parse_html_table(table))
+    paginator = soup.find_all("div", class_="wisbb_paginator")[0]
+    next_button = paginator.find_all('a')[-1]
+    if "Next" not in next_button.get_text():
       keep_going = False
+    else:
+      url = 'http://www.foxsports.com/' + next_button['href']
 
     print '+++++++++++++'
 
-  dataframe.to_csv(filename, encoding='utf-8', index=False)
+  c_dataframe = c_dataframe.rename(columns = {'CONTROL':'Name'})
+  c_dataframe = c_dataframe.drop_duplicates()
 
-  if position != 'Goalkeeper':
-    url = base_url + country_codes[country] + '&season=' + year + '0&category=DISCIPLINE&pos=' + position + '&team=0&isOpp=0&sort=3&sortOrder=0'
-  else:
-    url = base_url + country_codes[country] + '&season=' + year + '0&category=GOALKEEPING'
-  filename = './data/' + position + '_' + country + '_' + year + '_Discipline.csv'
+  # DISCIPLINE
+  url = base_url + country_codes[country] + '&season=' + year + '0&category=DISCIPLINE&pos=' + position + '&team=0&isOpp=0&sort=3&sortOrder=0'
 
   soup = soupify(url, ctx)
   table = soup.find_all('table')[0]
-  dataframe = parse_html_table(table)
+  d_dataframe = parse_html_table(table)
 
   # will continue going until it can't see the next link anymore
   keep_going = True
   while keep_going:
-    if position != 'Goalkeeper':
-      paginator = soup.find_all("div", class_="wisbb_paginator")[0]
-      next_button = paginator.find_all('a')[-1]
-      if "Next" not in next_button.get_text():
-        keep_going = False
-      else:
-        url = 'http://www.foxsports.com/' + next_button['href']
-        soup = soupify(url, ctx)
-        table = soup.find_all('table')[0]
-        dataframe = dataframe.append(parse_html_table(table))
-    else:
+    paginator = soup.find_all("div", class_="wisbb_paginator")[0]
+    next_button = paginator.find_all('a')[-1]
+    if "Next" not in next_button.get_text():
       keep_going = False
+    else:
+      url = 'http://www.foxsports.com/' + next_button['href']
+      soup = soupify(url, ctx)
+      table = soup.find_all('table')[0]
+      d_dataframe = d_dataframe.append(parse_html_table(table))
 
     print '+++++++++++++'
 
+  d_dataframe = d_dataframe.rename(columns = {'DISCIPLINE':'Name'})
+
+  # combine
+  dataframe = pd.merge(d_dataframe, c_dataframe, on='Name', how='outer')
+
   dataframe.to_csv(filename, encoding='utf-8', index=False)
-
-
 
 # get data and output csv
 # country = "Spain", "France", "Italy", "Germany"
@@ -143,7 +155,7 @@ def scrape(country, year, ctx):
   scrape_by_pos(country, year, ctx, "Defender")
   scrape_by_pos(country, year, ctx, "Midfielder")
   scrape_by_pos(country, year, ctx, "Forward")
-  scrape_by_pos(country, year, ctx, "Goalkeeper")
+  scrape_goalie(country, year, ctx)
   print 'CSVs of data created!'
 
   
