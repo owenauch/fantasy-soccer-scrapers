@@ -140,9 +140,36 @@ def scrape_by_pos(country, year, ctx, position):
     print '+++++++++++++'
 
   d_dataframe = d_dataframe.rename(columns = {'DISCIPLINE':'Name'})
+  d_dataframe = d_dataframe.drop_duplicates()
+
+  # STANDARD
+  url = base_url + country_codes[country] + '&season=' + year + '0&category=STANDARD&pos=' + position + '&team=0&isOpp=0&sort=3&sortOrder=0'
+
+  soup = soupify(url, ctx)
+  table = soup.find_all('table')[0]
+  s_dataframe = parse_html_table(table)
+
+  # will continue going until it can't see the next link anymore
+  keep_going = True
+  while keep_going:
+    paginator = soup.find_all("div", class_="wisbb_paginator")[0]
+    next_button = paginator.find_all('a')[-1]
+    if "Next" not in next_button.get_text():
+      keep_going = False
+    else:
+      url = 'http://www.foxsports.com/' + next_button['href']
+      soup = soupify(url, ctx)
+      table = soup.find_all('table')[0]
+      s_dataframe = s_dataframe.append(parse_html_table(table))
+
+    print '+++++++++++++'
+
+  s_dataframe = s_dataframe.rename(columns = {'STANDARD':'Name'})
+  s_dataframe = s_dataframe.drop_duplicates()
 
   # combine
   dataframe = pd.merge(d_dataframe, c_dataframe, on='Name', how='outer')
+  dataframe = pd.merge(dataframe, s_dataframe, on='Name', how='outer')
 
   dataframe.to_csv(filename, encoding='utf-8', index=False)
 
