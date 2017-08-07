@@ -115,6 +115,7 @@ def scrape_by_pos(country, year, ctx, position):
     print '+++++++++++++'
 
   c_dataframe = c_dataframe.rename(columns = {'CONTROL':'Name'})
+  c_dataframe = c_dataframe.drop(['MP', 'TT', 'P', 'GMB', 'OFF', 'CK'], axis=1)
   c_dataframe = c_dataframe.drop_duplicates()
 
   # DISCIPLINE
@@ -140,6 +141,7 @@ def scrape_by_pos(country, year, ctx, position):
     print '+++++++++++++'
 
   d_dataframe = d_dataframe.rename(columns = {'DISCIPLINE':'Name'})
+  d_dataframe = d_dataframe.drop(['GP', 'GS', 'MP', 'FS', 'FC', 'OFF', 'C', 'CK', 'PK'], axis=1)
   d_dataframe = d_dataframe.drop_duplicates()
 
   # STANDARD
@@ -165,6 +167,7 @@ def scrape_by_pos(country, year, ctx, position):
     print '+++++++++++++'
 
   s_dataframe = s_dataframe.rename(columns = {'STANDARD':'Name'})
+  s_dataframe = s_dataframe.drop(['GP', 'GS', 'MP', 'YC', 'RC'], axis=1)
   s_dataframe = s_dataframe.drop_duplicates()
 
   # combine
